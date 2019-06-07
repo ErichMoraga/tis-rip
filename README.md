@@ -15,6 +15,12 @@ chrome --user-data-dir=./user-data
 
 You should set the Download directory to ./download, and disable the built-in PDF viewer.
 
+You will also need to install the pip dependencies:
+
+```
+pip install -r requirements.txt
+```
+
 ## Usage
 
 ```
