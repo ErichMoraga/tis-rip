@@ -3,6 +3,24 @@
 This script allows you to rip electrical wiring diagrams, collision/body repair manuals, and repair manuals from
 Toyota's TIS.
 
+### CZ notes: June 2022
+
+Install dependencies (bs4, selenium) in conda environment. Activate (e.g., `conda activate scrape`)
+
+1\. Check Google Chrome for version, then given version download matching ChromeDriver from http://chromedriver.chromium.org/downloads and untar the binary into this directory.
+
+2\. Generate user profile in this directory on MacOS by running:
+
+```
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --user-data-dir=./user-data
+```
+
+3\. Do initial "rip." `./rip.py RM30B0U` --> this will open TIS in Chrome and prompt a login. After this, return to Terminal and press enter.
+
+4\. The initial rip creates and HTML ToC. After the initial rip is completed, run the code again `./rip.py RM30B0U` and it will find the HTML files and instead generate PDFs for all files and add to the ToC as well.
+
+NOTE: Some older vehicles (e.g., 2008 Corolla) have body repair manuals that start with BRM and do not use the same document ID as the RM or EM.
+
 ## Setup
 
 This script requires that you download ChromeDriver from http://chromedriver.chromium.org/downloads and place the
