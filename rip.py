@@ -9,6 +9,8 @@ from bs4 import BeautifulSoup
 import os
 import sys
 
+# The chrome application path is pretty platform/install specific..
+CHROME_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 def mkfilename(s):
     fn = ""
@@ -83,7 +85,7 @@ def download_ewd(driver, ewd):
             # this will have downloaded the file, or not
             temp_dl_path = os.path.join("download", fig + ".pdf.crdownload")
             while os.path.exists(temp_dl_path):
-                time.sleep(0.2)
+                time.sleep(5.0)
             dl_path = os.path.join("download", fig + ".pdf")
             if not os.path.exists(dl_path):
                 time.sleep(1)
@@ -179,8 +181,11 @@ def download_manual(driver, t, id):
         f_p = os.path.join(id, "html", f_parts[len(f_parts)-1])
         pdf_p = os.path.join(id, "pdf", f_parts[len(f_parts)-1][:-5] + ".pdf")
 
+        #print("do we make a pdf?")
+        print(f_p+" "+pdf_p)
         if os.path.exists(f_p) and not os.path.exists(pdf_p):
             # make the pdf
+            #print("we have a file but no pdf, let's go!")
             make_pdf(f_p, pdf_p)
 
         if os.path.exists(f_p) or os.path.exists(pdf_p):
@@ -191,7 +196,7 @@ def download_manual(driver, t, id):
             print("\tPDF redirect found!")
             
             while True:
-                time.sleep(0.2)
+                time.sleep(5.0)
                 incomplete = False
                 for f in os.listdir("download"):
                     if f.endswith(".crdownload"):
@@ -201,12 +206,12 @@ def download_manual(driver, t, id):
                     break
                 else:
                     print("Waiting for incomplete download!")
-                    time.sleep(0.2)
+                    time.sleep(5.0)
 
             # list out all downloads in folder and try to match them!
             dest_file = None
             while len(os.listdir("download")) < 1:
-                time.sleep(0.2)
+                time.sleep(5.0)
 
             for f in os.listdir("download"):
                 print(f)
@@ -247,8 +252,7 @@ def download_manual(driver, t, id):
 
 def make_pdf(src, dest):
     print("Creating PDF from", src, "to", dest)
-    subprocess.run(["/usr/bin/chromium", "--print-to-pdf=" + dest, "--no-gpu", "--headless", "file://" + os.path.abspath(src)])
-
+    subprocess.run([CHROME_PATH, "--print-to-pdf=" + os.path.abspath(dest), "--no-gpu", "--headless", "file://" + os.path.abspath(src)])
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
