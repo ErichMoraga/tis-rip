@@ -3,12 +3,15 @@ from selenium import webdriver
 import time
 import os.path
 import xml.etree.ElementTree as ET
+from lxml import etree
 import shutil
 import subprocess
 from bs4 import BeautifulSoup
 import os
 import sys
 
+# The chrome application path is pretty platform/install specific..
+CHROME_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 def mkfilename(s):
     fn = ""
@@ -21,7 +24,7 @@ def mkfilename(s):
 
 def fix_links(fn):
     modified = False
-    doc = open(fn, 'r').read()
+    doc = open(fn, 'r', encoding="utf8").read()
     soup = BeautifulSoup(doc, 'lxml')
     for link in soup.find_all("a"):
         href = link.get('href')
@@ -41,7 +44,7 @@ def fix_links(fn):
     
     if modified:
         print("Writing ", fn)
-        with open(fn, 'w') as fh:
+        with open(fn, 'w', encoding="utf-8") as fh:
             fh.write(soup.prettify())
 
 def download_ewd(driver, ewd):
@@ -67,7 +70,8 @@ def download_ewd(driver, ewd):
     for s in SYSTEMS:
         idx = os.path.join(ewd, s, "index.xml")
         print(idx)
-        tree = ET.parse(idx)
+        parser = etree.XMLParser(recover=True,encoding='utf-8')
+        tree = ET.parse(idx,parser=parser)
         root = tree.getroot()
         for child in root:
             name = child.findall('name')[0].text
@@ -83,7 +87,7 @@ def download_ewd(driver, ewd):
             # this will have downloaded the file, or not
             temp_dl_path = os.path.join("download", fig + ".pdf.crdownload")
             while os.path.exists(temp_dl_path):
-                time.sleep(0.2)
+                time.sleep(5.0)
             dl_path = os.path.join("download", fig + ".pdf")
             if not os.path.exists(dl_path):
                 time.sleep(1)
@@ -136,7 +140,7 @@ def build_toc_index(base):
 
     body = toc_parse_items(base, root.findall("item"))
     index_out = os.path.join(base, "index.html")
-    with open(index_out, "w") as fh:
+    with open(index_out, "w", encoding='utf-8') as fh:
         fh.write("<!doctype html>\n")
         fh.write("<html><head><title>" + base + "</title></head><body>")
         fh.write(body)
@@ -155,6 +159,8 @@ def download_manual(driver, t, id):
         xml_src = driver.execute_script('return document.getElementById("webkit-xml-viewer-source-xml").innerHTML')
         with open(toc_path, 'w') as fh:
             fh.write(xml_src)
+        print('Add <?xml version="1.0" encoding="UTF-8"?> as the first line of the toc.xml file in the '+id+' folder')
+        input("Press enter to continue...")
 
     tree = ET.parse(toc_path)
     root = tree.getroot()
@@ -179,8 +185,11 @@ def download_manual(driver, t, id):
         f_p = os.path.join(id, "html", f_parts[len(f_parts)-1])
         pdf_p = os.path.join(id, "pdf", f_parts[len(f_parts)-1][:-5] + ".pdf")
 
+        #print("do we make a pdf?")
+        print(f_p+" "+pdf_p)
         if os.path.exists(f_p) and not os.path.exists(pdf_p):
             # make the pdf
+            #print("we have a file but no pdf, let's go!")
             make_pdf(f_p, pdf_p)
 
         if os.path.exists(f_p) or os.path.exists(pdf_p):
@@ -191,7 +200,7 @@ def download_manual(driver, t, id):
             print("\tPDF redirect found!")
             
             while True:
-                time.sleep(0.2)
+                time.sleep(5.0)
                 incomplete = False
                 for f in os.listdir("download"):
                     if f.endswith(".crdownload"):
@@ -201,12 +210,12 @@ def download_manual(driver, t, id):
                     break
                 else:
                     print("Waiting for incomplete download!")
-                    time.sleep(0.2)
+                    time.sleep(5.0)
 
             # list out all downloads in folder and try to match them!
             dest_file = None
             while len(os.listdir("download")) < 1:
-                time.sleep(0.2)
+                time.sleep(5.0)
 
             for f in os.listdir("download"):
                 print(f)
@@ -236,7 +245,7 @@ def download_manual(driver, t, id):
                 time.sleep(1)
                 src = driver.execute_script(open("injected.js", "r").read())
 
-            with open(f_p, 'w') as fh:
+            with open(f_p, 'w', encoding='utf-8') as fh:
                 fh.write(src)
 
             fix_links(f_p)
@@ -247,8 +256,7 @@ def download_manual(driver, t, id):
 
 def make_pdf(src, dest):
     print("Creating PDF from", src, "to", dest)
-    subprocess.run(["/usr/bin/chromium", "--print-to-pdf=" + dest, "--no-gpu", "--headless", "file://" + os.path.abspath(src)])
-
+    subprocess.run([CHROME_PATH, "--print-to-pdf=" + os.path.abspath(dest), "--no-gpu", "--headless", "file://" + os.path.abspath(src)])
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -258,6 +266,7 @@ if __name__ == "__main__":
     EWDS = []
     REPAIR_MANUALS = []
     COLLISION_MANUALS = []
+    NEWCAR_FEATURES = []
 
     for arg in sys.argv[1:]:
         if arg.startswith('EM'):
@@ -295,5 +304,10 @@ if __name__ == "__main__":
     print("Downloading repair manuals...")
     for rm in REPAIR_MANUALS:
         download_manual(driver, "rm", rm)
+
+    #download new car features
+    print("Downloading new car features...")
+    for nm in NEWCAR_FEATURES:
+        download_manual(driver, "ncf", nm)
 
     driver.close()
