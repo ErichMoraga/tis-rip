@@ -3,6 +3,7 @@ from selenium import webdriver
 import time
 import os.path
 import xml.etree.ElementTree as ET
+from lxml import etree
 import shutil
 import subprocess
 from bs4 import BeautifulSoup
@@ -23,7 +24,7 @@ def mkfilename(s):
 
 def fix_links(fn):
     modified = False
-    doc = open(fn, 'r').read()
+    doc = open(fn, 'r', encoding="utf8").read()
     soup = BeautifulSoup(doc, 'lxml')
     for link in soup.find_all("a"):
         href = link.get('href')
@@ -43,7 +44,7 @@ def fix_links(fn):
     
     if modified:
         print("Writing ", fn)
-        with open(fn, 'w') as fh:
+        with open(fn, 'w', encoding="utf-8") as fh:
             fh.write(soup.prettify())
 
 def download_ewd(driver, ewd):
@@ -69,7 +70,8 @@ def download_ewd(driver, ewd):
     for s in SYSTEMS:
         idx = os.path.join(ewd, s, "index.xml")
         print(idx)
-        tree = ET.parse(idx)
+        parser = etree.XMLParser(recover=True,encoding='utf-8')
+        tree = ET.parse(idx,parser=parser)
         root = tree.getroot()
         for child in root:
             name = child.findall('name')[0].text
@@ -138,7 +140,7 @@ def build_toc_index(base):
 
     body = toc_parse_items(base, root.findall("item"))
     index_out = os.path.join(base, "index.html")
-    with open(index_out, "w") as fh:
+    with open(index_out, "w", encoding='utf-8') as fh:
         fh.write("<!doctype html>\n")
         fh.write("<html><head><title>" + base + "</title></head><body>")
         fh.write(body)
@@ -157,6 +159,8 @@ def download_manual(driver, t, id):
         xml_src = driver.execute_script('return document.getElementById("webkit-xml-viewer-source-xml").innerHTML')
         with open(toc_path, 'w') as fh:
             fh.write(xml_src)
+        print('Add <?xml version="1.0" encoding="UTF-8"?> as the first line of the toc.xml file in the '+id+' folder')
+        input("Press enter to continue...")
 
     tree = ET.parse(toc_path)
     root = tree.getroot()
@@ -241,7 +245,7 @@ def download_manual(driver, t, id):
                 time.sleep(1)
                 src = driver.execute_script(open("injected.js", "r").read())
 
-            with open(f_p, 'w') as fh:
+            with open(f_p, 'w', encoding='utf-8') as fh:
                 fh.write(src)
 
             fix_links(f_p)
