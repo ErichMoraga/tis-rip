@@ -266,6 +266,7 @@ if __name__ == "__main__":
     EWDS = []
     REPAIR_MANUALS = []
     COLLISION_MANUALS = []
+    NEWCAR_FEATURES = []
 
     for arg in sys.argv[1:]:
         if arg.startswith('EM'):
@@ -303,5 +304,10 @@ if __name__ == "__main__":
     print("Downloading repair manuals...")
     for rm in REPAIR_MANUALS:
         download_manual(driver, "rm", rm)
+
+    #download new car features
+    print("Downloading new car features...")
+    for nm in NEWCAR_FEATURES:
+        download_manual(driver, "ncf", nm)
 
     driver.close()
